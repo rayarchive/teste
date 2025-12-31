@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Estante Virtual</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: transparent; font-family: 'Segoe UI', sans-serif; color: white; overflow-x: hidden; }
+        .furniture-wrapper { width: 90%; max-width: 420px; margin: 20px auto; display: flex; flex-direction: column; align-items: center; }
+        
+        /* ESTANTE */
+        .bookshelf-container {
+            width: 100%; background-color: #121212; 
+            border: 15px solid #252525; border-bottom: none; border-radius: 6px 6px 0 0; 
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative;
+        }
+        .bookshelf-container::before {
+            content: ''; position: absolute; top: -25px; left: -15px; right: -15px; height: 25px;
+            background: #252525; border-radius: 4px 4px 0 0; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .shelf-row {
+            height: 130px; border-bottom: 12px solid #333; display: flex; align-items: flex-end; padding: 0 8px;
+            background: linear-gradient(to bottom, #0a0a0a, #1a1a1a); position: relative; overflow: hidden; 
+        }
+        .shelf-row::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 10px; background: rgba(0,0,0,0.4); z-index: 1; }
+
+        .shelf-footer { width: 100%; display: flex; justify-content: space-between; padding: 0 5px; box-sizing: border-box; }
+        .foot { width: 50px; height: 30px; background: #252525; border-radius: 0 0 5px 5px; box-shadow: 5px 5px 10px rgba(0,0,0,0.5); position: relative; }
+        #secret-btn { width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; }
+        
+        /* LIVRO REAL */
+        .book { margin-right: 1px; background-size: cover; background-position: center; border-radius: 1px; box-shadow: 2px 0 5px rgba(0,0,0,0.9); transition: transform 0.2s; position: relative; z-index: 5;}
+        
+        /* Modo Exclusão */
+        .book.shake-mode { animation: shake 0.5s infinite; cursor: not-allowed; opacity: 0.8; border: 1px solid red; }
+        @keyframes shake { 0% { transform: rotate(0deg); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
+
+        .book:hover { transform: scale(1.05) translateY(-5px); z-index: 10; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+        .book:hover::after {
+            content: attr(data-title); position: absolute; bottom: 105%; left: 50%; transform: translateX(-50%);
+            background: #000; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; z-index: 20; border: 1px solid #333;
+        }
+
+        /* LIVRO GENÉRICO (Filler) */
+        .filler-book {
+            margin-right: 1px; border-radius: 2px;
+            box-shadow: inset 2px 0 10px rgba(0,0,0,0.5);
+            opacity: 0.6; /* Mais discreto */
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* PAINEL */
+        #admin-panel { display: none; background: #151515; padding: 15px; border-bottom: 2px solid #333; position: fixed; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 10px 40px rgba(0,0,0,1); }
+        .input-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        input { padding: 8px; background: #222; border: 1px solid #444; color: #eee; border-radius: 4px; font-size: 13px; }
+        .input-cm { width: 85px; border: 1px solid #2196F3 !important; }
+        button.action-btn { padding: 8px 16px; cursor: pointer; border: none; border-radius: 4px; font-weight: 600; text-transform: uppercase; font-size: 11px; color: white; }
+        .btn-add { background-color: #388E3C; }
+        .btn-close { background-color: #555; }
+        .btn-export { background-color: #2196F3; width: 100%; margin-top: 10px;}
+        .btn-delete-mode { background-color: #D32F2F; width: 100%; margin-top: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <div id="admin-panel">
+        <h3 style="margin: 0 0 10px 0; color: #ccc; font-size: 16px;">Gerenciar Estante</h3>
+        <div class="input-group">
+            <input type="text" id="seriesName" placeholder="Nome da Série" style="flex: 2;">
+            <input type="number" id="volNumber" placeholder="Vol." style="width: 50px;">
+        </div>
+        <div class="input-group">
+            <input type="text" id="imgUrl" placeholder="Link Lombada Imgur" style="flex: 1;">
+            <input type="text" id="pageLink" placeholder="Link Notion" style="flex: 1;">
+        </div>
+        <div class="input-group">
+            <input type="number" id="bookHeightCm" class="input-cm" step="0.1" placeholder="Alt. (cm)" value="21">
+            <input type="number" id="bookWidthCm" class="input-cm" step="0.1" placeholder="Larg. (cm)" value="1.5">
+            <button class="action-btn btn-add" onclick="addBook()">Adicionar</button>
+            <button class="action-btn btn-close" onclick="togglePanel()">Fechar</button>
+        </div>
+        
+        <button class="action-btn btn-delete-mode" id="btn-del" onclick="toggleDeleteMode()">🗑️ Modo Exclusão: DESLIGADO</button>
+        <button class="action-btn btn-export" onclick="exportData()">📋 COPIAR CÓDIGO FINAL (JSON)</button>
+    </div>
+
+    <div class="furniture-wrapper">
+        <div class="bookshelf-container" id="bookshelf">
+            <div class="shelf-row" id="shelf-1"></div>
+            <div class="shelf-row" id="shelf-2"></div>
+            <div class="shelf-row" id="shelf-3"></div>
+            <div class="shelf-row" id="shelf-4"></div>
+            <div class="shelf-row" id="shelf-5"></div>
+            <div class="shelf-row" id="shelf-6"></div>
+        </div>
+        <div class="shelf-footer">
+            <div class="foot"></div>
+            <div class="foot"><button id="secret-btn" onclick="togglePanel()"></button></div>
+        </div>
+    </div>
+
+    <script>
+        // -----------------------------------------------------
+        // COLE AQUI O JSON DO NOTION/PC (Fixos)
+        // -----------------------------------------------------
+        const fixedBooks = [
+            
+        ];
+        // -----------------------------------------------------
+
+        let localBooks = JSON.parse(localStorage.getItem('myMangaShelf_v7')) || [];
+        
+        // Se ainda não tem v7, tenta pegar v6 ou v5 (Isso traz os livros testes antigos)
+        if (localBooks.length === 0) {
+            let old = JSON.parse(localStorage.getItem('myMangaShelf_v6')) || JSON.parse(localStorage.getItem('myMangaShelf_v5'));
+            if (old) {
+                localBooks = old;
+                localStorage.setItem('myMangaShelf_v7', JSON.stringify(localBooks));
+            }
+        }
+
+        let isDeleteMode = false;
+        let allBooks = [];
+
+        function togglePanel() {
+            const panel = document.getElementById('admin-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleDeleteMode() {
+            isDeleteMode = !isDeleteMode;
+            const btn = document.getElementById('btn-del');
+            if (isDeleteMode) {
+                btn.innerText = "LIGADO (Clique no livro para apagar)";
+                btn.style.backgroundColor = "#ff0000";
+            } else {
+                btn.innerText = "🗑️ Modo Exclusão: DESLIGADO";
+                btn.style.backgroundColor = "#D32F2F";
+            }
+            renderShelf();
+        }
+
+        function addBook() {
+            const series = document.getElementById('seriesName').value.trim();
+            const vol = parseInt(document.getElementById('volNumber').value) || 0;
+            const url = document.getElementById('imgUrl').value.trim();
+            const link = document.getElementById('pageLink').value.trim();
+            const hCm = parseFloat(document.getElementById('bookHeightCm').value);
+            const wCm = parseFloat(document.getElementById('bookWidthCm').value);
+
+            const calculatedH = (hCm * 90) / 21;
+            const calculatedW = wCm * 18;
+
+            if (!series || !url) { alert("Nome e Imagem são obrigatórios!"); return; }
+
+            const newBook = { series, vol, url, link, h: calculatedH.toFixed(1), w: calculatedW.toFixed(1), id: Date.now() };
+            localBooks.push(newBook);
+            saveLocal();
+            
+            document.getElementById('volNumber').value = '';
+            document.getElementById('imgUrl').value = '';
+        }
+
+        function saveLocal() {
+            localStorage.setItem('myMangaShelf_v7', JSON.stringify(localBooks));
+            renderShelf();
+        }
+
+        function deleteBook(bookId) {
+            localBooks = localBooks.filter(b => b.id !== bookId);
+            const isFixed = fixedBooks.find(b => b.id === bookId);
+            if (isFixed) {
+                alert("Este livro é Fixo (GitHub). Delete a linha dele no código.");
+            } else {
+                if(confirm("Apagar este livro?")) saveLocal();
+            }
+        }
+
+        function exportData() {
+            const finalData = [...fixedBooks, ...localBooks];
+            const dataStr = JSON.stringify(finalData, null, 4);
+            navigator.clipboard.writeText(dataStr).then(() => alert("Copiado! Cole no GitHub."));
+        }
+
+        // --- MÁGICA DOS LIVROS FALSOS ---
+        function createFiller(width) {
+            const div = document.createElement('div');
+            div.className = 'filler-book';
+            // Tamanhos variados
+            const randomH = Math.floor(Math.random() * (92 - 80 + 1)) + 80; 
+            div.style.height = `${randomH}%`;
+            div.style.width = `${width}px`;
+            
+            // Cores de estante (Marrons, Azuis escuros, Cinzas)
+            const colors = ['#2b2b2b', '#3a3a3a', '#261C15', '#1e2430', '#301e1e'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            div.style.background = randomColor;
+            
+            return div;
+        }
+
+        function renderShelf() {
+            // Limpa prateleiras
+            for (let i = 1; i <= 6; i++) document.getElementById(`shelf-${i}`).innerHTML = '';
+            
+            allBooks = [...fixedBooks, ...localBooks];
+            allBooks.sort((a, b) => a.series.localeCompare(b.series) || a.vol - b.vol);
+
+            let shelfIndex = 1;
+            let currentWidthUsed = 0;
+            const shelfMaxW = 380; // Largura útil aproximada
+
+            // 1. Renderiza os Livros Reais
+            allBooks.forEach(book => {
+                const bookDiv = document.createElement('div');
+                bookDiv.className = 'book';
+                bookDiv.style.backgroundImage = `url('${book.url}')`;
+                bookDiv.style.height = `${book.h}%`;
+                bookDiv.style.width = `${book.w}px`;
+                bookDiv.setAttribute('data-title', `${book.series} #${book.vol}`);
+                
+                if (isDeleteMode) {
+                    bookDiv.classList.add('shake-mode');
+                    bookDiv.onclick = () => deleteBook(book.id);
+                } else if (book.link) {
+                    bookDiv.onclick = () => window.open(book.link, '_blank');
+                    bookDiv.style.cursor = "pointer";
+                }
+
+                if ((currentWidthUsed + parseFloat(book.w)) > shelfMaxW) {
+                    // Se encheu, preenche o resto da prateleira anterior com fillers antes de mudar
+                    fillRemainingSpace(shelfIndex, currentWidthUsed, shelfMaxW);
+                    shelfIndex++;
+                    currentWidthUsed = 0;
+                }
+
+                const currentShelf = document.getElementById(`shelf-${shelfIndex}`);
+                if (currentShelf) {
+                    currentShelf.appendChild(bookDiv);
+                    currentWidthUsed += parseFloat(book.w) + 1; // +1 margem
+                }
+            });
+
+            // 2. Preenche o resto da prateleira atual e as próximas vazias
+            fillRemainingSpace(shelfIndex, currentWidthUsed, shelfMaxW);
+            
+            for (let j = shelfIndex + 1; j <= 6; j++) {
+                fillRemainingSpace(j, 0, shelfMaxW);
+            }
+        }
+
+        function fillRemainingSpace(shelfIdx, used, max) {
+            const shelf = document.getElementById(`shelf-${shelfIdx}`);
+            if (!shelf) return;
+            
+            let remaining = max - used;
+            
+            // Enquanto couber um livro fino (15px)
+            while (remaining > 15) {
+                // Largura aleatória entre 15px e 35px
+                let w = Math.floor(Math.random() * (35 - 15 + 1)) + 15;
+                if (w > remaining) w = remaining; // Ajusta se for o último
+                
+                const filler = createFiller(w);
+                shelf.appendChild(filler);
+                remaining -= (w + 1);
+            }
+        }
+
+        renderShelf();
+    </script>
+</body>
+</html>
