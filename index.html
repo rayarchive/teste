@@ -32,8 +32,13 @@
         /* LIVRO REAL */
         .book { margin-right: 1px; background-size: cover; background-position: center; border-radius: 1px; box-shadow: 2px 0 5px rgba(0,0,0,0.9); transition: transform 0.2s; position: relative; z-index: 5;}
         
-        /* Modo Exclusão */
-        .book.shake-mode { animation: shake 0.5s infinite; cursor: not-allowed; opacity: 0.8; border: 1px solid red; }
+        /* CORREÇÃO DO CURSOR NO MODO EXCLUSÃO */
+        .book.shake-mode { 
+            animation: shake 0.5s infinite; 
+            cursor: crosshair !important; /* Muda para uma mira/alvo */
+            opacity: 0.8; 
+            border: 2px solid red; 
+        }
         @keyframes shake { 0% { transform: rotate(0deg); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
 
         .book:hover { transform: scale(1.05) translateY(-5px); z-index: 10; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
@@ -42,12 +47,14 @@
             background: #000; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; z-index: 20; border: 1px solid #333;
         }
 
-        /* LIVRO GENÉRICO (Filler) */
+        /* LIVRO GENÉRICO (Dark Manga Filler) */
         .filler-book {
-            margin-right: 1px; border-radius: 2px;
-            box-shadow: inset 2px 0 10px rgba(0,0,0,0.5);
-            opacity: 0.6; /* Mais discreto */
-            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-right: 1px; 
+            border-radius: 1px;
+            box-shadow: inset 1px 0 3px rgba(0,0,0,0.8); /* Sombra interna para profundidade */
+            opacity: 1;
+            /* Detalhe sutil de lombada */
+            border-left: 1px solid rgba(255,255,255,0.05);
         }
 
         /* PAINEL */
@@ -112,7 +119,7 @@
 
         let localBooks = JSON.parse(localStorage.getItem('myMangaShelf_v7')) || [];
         
-        // Se ainda não tem v7, tenta pegar v6 ou v5 (Isso traz os livros testes antigos)
+        // Recuperação de versões anteriores
         if (localBooks.length === 0) {
             let old = JSON.parse(localStorage.getItem('myMangaShelf_v6')) || JSON.parse(localStorage.getItem('myMangaShelf_v5'));
             if (old) {
@@ -133,7 +140,7 @@
             isDeleteMode = !isDeleteMode;
             const btn = document.getElementById('btn-del');
             if (isDeleteMode) {
-                btn.innerText = "LIGADO (Clique no livro para apagar)";
+                btn.innerText = "CLIQUE NO LIVRO PARA APAGAR";
                 btn.style.backgroundColor = "#ff0000";
             } else {
                 btn.innerText = "🗑️ Modo Exclusão: DESLIGADO";
@@ -184,17 +191,18 @@
             navigator.clipboard.writeText(dataStr).then(() => alert("Copiado! Cole no GitHub."));
         }
 
-        // --- MÁGICA DOS LIVROS FALSOS ---
+        // --- PREENCHIMENTO ESCURO E FINO ---
         function createFiller(width) {
             const div = document.createElement('div');
             div.className = 'filler-book';
-            // Tamanhos variados
-            const randomH = Math.floor(Math.random() * (92 - 80 + 1)) + 80; 
+            
+            // Altura variando pouco (padrão mangá alinhado)
+            const randomH = Math.floor(Math.random() * (92 - 85 + 1)) + 85; 
             div.style.height = `${randomH}%`;
             div.style.width = `${width}px`;
             
-            // Cores de estante (Marrons, Azuis escuros, Cinzas)
-            const colors = ['#2b2b2b', '#3a3a3a', '#261C15', '#1e2430', '#301e1e'];
+            // Tons de PRETO e CINZA ESCURO (baseado na sua imagem)
+            const colors = ['#0f0f0f', '#1a1a1a', '#222222', '#141414', '#1c1c1c', '#000000'];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             div.style.background = randomColor;
             
@@ -202,7 +210,6 @@
         }
 
         function renderShelf() {
-            // Limpa prateleiras
             for (let i = 1; i <= 6; i++) document.getElementById(`shelf-${i}`).innerHTML = '';
             
             allBooks = [...fixedBooks, ...localBooks];
@@ -210,9 +217,8 @@
 
             let shelfIndex = 1;
             let currentWidthUsed = 0;
-            const shelfMaxW = 380; // Largura útil aproximada
+            const shelfMaxW = 380; 
 
-            // 1. Renderiza os Livros Reais
             allBooks.forEach(book => {
                 const bookDiv = document.createElement('div');
                 bookDiv.className = 'book';
@@ -230,7 +236,6 @@
                 }
 
                 if ((currentWidthUsed + parseFloat(book.w)) > shelfMaxW) {
-                    // Se encheu, preenche o resto da prateleira anterior com fillers antes de mudar
                     fillRemainingSpace(shelfIndex, currentWidthUsed, shelfMaxW);
                     shelfIndex++;
                     currentWidthUsed = 0;
@@ -239,13 +244,14 @@
                 const currentShelf = document.getElementById(`shelf-${shelfIndex}`);
                 if (currentShelf) {
                     currentShelf.appendChild(bookDiv);
-                    currentWidthUsed += parseFloat(book.w) + 1; // +1 margem
+                    currentWidthUsed += parseFloat(book.w) + 1; 
                 }
             });
 
-            // 2. Preenche o resto da prateleira atual e as próximas vazias
+            // Preenche o resto da prateleira atual
             fillRemainingSpace(shelfIndex, currentWidthUsed, shelfMaxW);
             
+            // Preenche as prateleiras totalmente vazias abaixo
             for (let j = shelfIndex + 1; j <= 6; j++) {
                 fillRemainingSpace(j, 0, shelfMaxW);
             }
@@ -257,15 +263,25 @@
             
             let remaining = max - used;
             
-            // Enquanto couber um livro fino (15px)
-            while (remaining > 15) {
-                // Largura aleatória entre 15px e 35px
-                let w = Math.floor(Math.random() * (35 - 15 + 1)) + 15;
-                if (w > remaining) w = remaining; // Ajusta se for o último
+            // Loop para garantir que preenche ATÉ O FINAL
+            while (remaining > 0) {
+                // Largura fina: entre 10px e 22px (padrão mangá)
+                let w = Math.floor(Math.random() * (22 - 10 + 1)) + 10;
                 
-                const filler = createFiller(w);
-                shelf.appendChild(filler);
-                remaining -= (w + 1);
+                // Se o espaço que sobrou for menor que o livro gerado, 
+                // força o livro a ter exatamente o tamanho que falta.
+                if (w >= remaining) {
+                    w = remaining;
+                    remaining = 0; // Termina o loop
+                } else {
+                    remaining -= (w + 1); // +1 da margem
+                }
+
+                // Proteção para não criar div de 0px
+                if (w > 0) {
+                    const filler = createFiller(w);
+                    shelf.appendChild(filler);
+                }
             }
         }
 
