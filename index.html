@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Estante Widget - Versão Fusão</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Estante Widget - Versão Mobile Friendly</title>
     <style>
-        /* --- ESTILO GERAL (BASEADO NO CÓDIGO 1) --- */
+        /* --- ESTILO GERAL --- */
         body {
             margin: 0; padding: 0;
             background-color: transparent; 
@@ -40,7 +40,7 @@
 
         /* AS PRATELEIRAS */
         .shelf-row {
-            height: 130px; /* Altura fixa conforme Código 1 */
+            height: 130px; 
             border-bottom: 12px solid #252525;
             display: flex; align-items: flex-end; 
             padding: 0 8px;
@@ -52,7 +52,7 @@
         .shelf-row::before {
             content: ''; position: absolute;
             top: 0; left: 0; right: 0; height: 10px;
-            background: rgba(0,0,0,0.4); z-index: 1;
+            background: rgba(0,0,0,0.4); z-index: 1; pointer-events: none;
         }
 
         /* A BASE COM OS PÉS */
@@ -71,8 +71,8 @@
             width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none;
         }
         
-        /* O LIVRO */
-        .book {
+        /* O LIVRO (Agora suporta ser um link <a>) */
+        .book, a.book-link {
             margin-right: 1px;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             border-radius: 1px;
@@ -80,15 +80,17 @@
             transition: transform 0.2s;
             cursor: pointer; position: relative;
             flex-shrink: 0; 
+            display: block; /* Garante que o link ocupe o espaço */
+            text-decoration: none; /* Remove sublinhado de link */
         }
 
-        .book:hover {
+        .book:hover, a.book-link:hover {
             transform: scale(1.05) translateY(-5px);
             z-index: 10;
             box-shadow: 0 0 15px rgba(255,255,255,0.1);
         }
 
-        .book:hover::after {
+        .book:hover::after, a.book-link:hover::after {
             content: attr(data-title);
             position: absolute; bottom: 105%; left: 50%;
             transform: translateX(-50%);
@@ -98,12 +100,12 @@
             z-index: 20; border: 1px solid #333;
         }
 
-        /* --- PAINEL DE CADASTRO (FUSÃO) --- */
+        /* PAINEL DE CADASTRO */
         #admin-panel {
             display: none; background: #151515; padding: 15px;
             border-bottom: 2px solid #333; position: fixed;
             top: 0; left: 0; right: 0; z-index: 100;
-            max-height: 90vh; overflow-y: auto; /* Permite rolar se a lista for grande */
+            max-height: 90vh; overflow-y: auto; 
             box-shadow: 0 10px 40px rgba(0,0,0,1);
         }
 
@@ -116,12 +118,10 @@
         }
         .btn-add { background-color: #388E3C; }
         .btn-close { background-color: #D32F2F; }
-        
-        /* Novos botões vindos do Código 2 */
         .btn-gen { background-color: #2196F3; width: 100%; margin-top: 5px; }
         .btn-load { background-color: #FF9800; width: 100%; margin-top: 5px; }
 
-        /* Estilos da Lista de Exclusão */
+        /* Lista de Exclusão */
         #book-list-container { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
         .list-item { 
             display: flex; justify-content: space-between; align-items: center; 
@@ -150,8 +150,7 @@
 <body>
 
     <div id="admin-panel">
-        <h3 style="margin: 0 0 10px 0; color: #ccc; font-size: 16px;">Gerenciar Estante (Modo CM)</h3>
-        
+        <h3 style="margin: 0 0 10px 0; color: #ccc; font-size: 16px;">Painel de Cadastro</h3>
         <div id="status-msg"></div>
 
         <div class="input-group">
@@ -160,26 +159,26 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="imgUrl" placeholder="Link da Imagem (Lombada)" style="flex: 2;">
+            <input type="text" id="imgUrl" placeholder="URL da Imagem (Pública)" style="flex: 2;">
             <input type="text" id="pageLink" placeholder="Link da Pág. (Opcional)" style="flex: 2;">
         </div>
 
         <div class="input-group">
-            <input type="number" id="bookHeightCm" class="input-mini" placeholder="Alt (cm)" value="19" step="0.1" title="Altura em CM (ex: 19)">
-            <input type="number" id="bookWidthCm" class="input-mini" placeholder="Esp (cm)" value="1.5" step="0.1" title="Espessura em CM (ex: 1.5)">
+            <input type="number" id="bookHeightCm" class="input-mini" placeholder="Alt (cm)" value="19" step="0.1" title="Altura em CM">
+            <input type="number" id="bookWidthCm" class="input-mini" placeholder="Esp (cm)" value="1.5" step="0.1" title="Espessura em CM">
             
             <button class="action-btn btn-add" onclick="addBook()">Adicionar</button>
             <button class="action-btn btn-close" onclick="togglePanel()">Fechar</button>
         </div>
 
         <div id="book-list-container">
-            <h4 style="margin: 0 0 10px 0; color: #aaa; font-size: 12px;">LIVROS CADASTRADOS (CLIQUE NO X PARA REMOVER):</h4>
+            <h4 style="margin: 0 0 10px 0; color: #aaa; font-size: 12px;">LIVROS CADASTRADOS:</h4>
             <div id="active-book-list"></div>
         </div>
 
         <div id="backup-area">
             <label style="font-size: 11px; color: #aaa;">BACKUP / RESTAURAÇÃO:</label>
-            <textarea id="backupText" placeholder="Copie o código gerado ou cole aqui para restaurar..."></textarea>
+            <textarea id="backupText" placeholder="Copie o código gerado aqui..."></textarea>
             <button class="action-btn btn-gen" onclick="generateBackupCode()">Gerar Código (Copiar)</button>
             <button class="action-btn btn-load" onclick="restoreBackupCode()">Restaurar (Colar)</button>
         </div>
@@ -204,13 +203,8 @@
     </div>
 
     <script>
-        // Usei uma nova chave 'vFusion' para garantir que comece limpo e organizado
-        const STORAGE_KEY = 'myMangaShelf_vFusion';
-        
+        const STORAGE_KEY = 'myMangaShelf_MobileFix';
         let myBooks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-
-        // --- MANTIDO DO CÓDIGO 1: FATOR DE ESCALA ---
-        // Garante que o visual fique perfeito como você gosta
         const PIXELS_PER_CM = 5; 
 
         function showStatus(text, type) {
@@ -224,28 +218,31 @@
         function togglePanel() {
             const panel = document.getElementById('admin-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            renderBookList(); // Atualiza a lista ao abrir
+            renderBookList(); 
         }
 
         function saveAndRender() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(myBooks));
             renderShelf();
-            renderBookList(); // Atualiza a lista no painel também
+            renderBookList(); 
         }
 
         function addBook() {
             const series = document.getElementById('seriesName').value.trim();
             const vol = parseInt(document.getElementById('volNumber').value);
-            const url = document.getElementById('imgUrl').value.trim();
-            const link = document.getElementById('pageLink').value.trim();
-            
-            // LÓGICA DO CÓDIGO 1: Pega os valores em CM
+            let url = document.getElementById('imgUrl').value.trim();
+            let link = document.getElementById('pageLink').value.trim();
             let h_cm = parseFloat(document.getElementById('bookHeightCm').value) || 19;
             let w_cm = parseFloat(document.getElementById('bookWidthCm').value) || 1.5;
 
             if (!series || !url) {
-                showStatus("Preciso do Nome e da Imagem!", "error");
+                showStatus("Preciso do Nome e da URL da Imagem!", "error");
                 return;
+            }
+
+            // Correção simples de Link para garantir que funcione
+            if (link && !link.startsWith('http')) {
+                link = 'https://' + link;
             }
 
             const newBook = {
@@ -253,14 +250,13 @@
                 vol: isNaN(vol) ? 0 : vol,
                 url: url,
                 link: link,
-                h_cm: h_cm, // Salvamos em CM (Padrão Código 1)
-                w_cm: w_cm, // Salvamos em CM (Padrão Código 1)
-                id: Date.now() // ID único para exclusão
+                h_cm: h_cm,
+                w_cm: w_cm,
+                id: Date.now()
             };
 
             myBooks.push(newBook);
             
-            // Limpa campos
             document.getElementById('volNumber').value = '';
             document.getElementById('imgUrl').value = '';
             document.getElementById('pageLink').value = '';
@@ -269,20 +265,16 @@
             showStatus("Livro Adicionado!", "success");
         }
 
-        // --- FUNÇÃO DE EXCLUSÃO INDIVIDUAL (Do Código 2) ---
         function deleteBook(id) {
-            // Filtra o array removendo o livro com aquele ID específico
             myBooks = myBooks.filter(book => book.id !== id);
             saveAndRender();
             showStatus("Livro removido.", "success");
         }
 
-        // --- RENDERIZA A LISTA NO PAINEL (Do Código 2) ---
         function renderBookList() {
             const list = document.getElementById('active-book-list');
             list.innerHTML = '';
             
-            // Ordenação para a lista do painel
             let sortedBooks = [...myBooks].sort((a, b) => {
                 if (a.series.toLowerCase() < b.series.toLowerCase()) return -1;
                 if (a.series.toLowerCase() > b.series.toLowerCase()) return 1;
@@ -297,7 +289,6 @@
             sortedBooks.forEach(b => {
                 const item = document.createElement('div');
                 item.className = 'list-item';
-                // Mostra Título + Vol e o botão de lixo
                 item.innerHTML = `
                     <span>${b.series} #${b.vol}</span>
                     <button class="btn-trash" onclick="deleteBook(${b.id})" title="Excluir">X</button>
@@ -306,18 +297,16 @@
             });
         }
 
-        // --- LÓGICA DE BACKUP (Do Código 2) ---
         function generateBackupCode() {
             const dataStr = JSON.stringify(myBooks);
             const textArea = document.getElementById('backupText');
             textArea.value = dataStr;
             textArea.select();
-            // Executa o comando de cópia (tenta copiar automaticamente)
             try {
                 document.execCommand('copy');
-                showStatus("Código copiado para a área de transferência!", "success");
+                showStatus("Copiado! Cole no bloco de notas.", "success");
             } catch (err) {
-                showStatus("Selecione o texto e copie manualmente.", "success");
+                showStatus("Selecione e copie manualmente.", "success");
             }
         }
 
@@ -333,27 +322,23 @@
             try {
                 const imported = JSON.parse(code);
                 if (Array.isArray(imported)) {
-                    // Verificação simples se o formato parece correto
                     myBooks = imported;
                     saveAndRender();
-                    showStatus("Estante Restaurada com Sucesso!", "success");
+                    showStatus("Restaurado com Sucesso!", "success");
                     textArea.value = ""; 
                 } else {
                     showStatus("Código inválido.", "error");
                 }
             } catch (err) { 
-                showStatus("Erro no código colado.", "error"); 
+                showStatus("Erro no código. Verifique se copiou tudo.", "error"); 
             }
         }
 
-        // --- RENDERIZAR ESTANTE (Lógica Visual do Código 1) ---
         function renderShelf() {
-            // Limpa as prateleiras
             for (let i = 1; i <= 6; i++) {
                 document.getElementById(`shelf-${i}`).innerHTML = '';
             }
 
-            // Ordenação Principal
             myBooks.sort((a, b) => {
                 if (a.series.toLowerCase() < b.series.toLowerCase()) return -1;
                 if (a.series.toLowerCase() > b.series.toLowerCase()) return 1;
@@ -365,29 +350,30 @@
             const shelfMaxWidth = 400; 
 
             myBooks.forEach(book => {
-                // Converte CM para PIXELS (Segredo do Código 1)
                 const heightPx = book.h_cm * PIXELS_PER_CM;
                 const widthPx = book.w_cm * PIXELS_PER_CM;
 
-                const bookDiv = document.createElement('div');
-                bookDiv.className = 'book';
-                bookDiv.style.backgroundImage = `url('${book.url}')`;
-                
-                // Aplica as medidas
-                bookDiv.style.height = `${heightPx}px`;
-                bookDiv.style.width = `${widthPx}px`;
-                
-                const displayVol = book.vol > 0 ? ` #${book.vol}` : '';
-                bookDiv.setAttribute('data-title', `${book.series}${displayVol}`);
+                // Aqui criamos ou DIV ou tag A dependendo se tem link
+                let bookEl;
 
                 if (book.link) {
-                    bookDiv.onclick = function() { window.open(book.link, '_blank'); };
-                    bookDiv.style.cursor = "pointer";
+                    bookEl = document.createElement('a');
+                    bookEl.className = 'book-link';
+                    bookEl.href = book.link;
+                    bookEl.target = '_blank'; // Abre em nova aba
                 } else {
-                    bookDiv.style.cursor = "default";
+                    bookEl = document.createElement('div');
+                    bookEl.className = 'book';
                 }
 
-                // Quebra de linha
+                bookEl.style.backgroundImage = `url('${book.url}')`;
+                bookEl.style.height = `${heightPx}px`;
+                bookEl.style.width = `${widthPx}px`;
+                
+                const displayVol = book.vol > 0 ? ` #${book.vol}` : '';
+                bookEl.setAttribute('data-title', `${book.series}${displayVol}`);
+
+                // Lógica de prateleira
                 if ((currentWidthUsed + widthPx) > shelfMaxWidth) {
                     shelfIndex++;
                     currentWidthUsed = 0;
@@ -395,7 +381,7 @@
 
                 const currentShelf = document.getElementById(`shelf-${shelfIndex}`);
                 if (currentShelf) {
-                    currentShelf.appendChild(bookDiv);
+                    currentShelf.appendChild(bookEl);
                     currentWidthUsed += widthPx;
                 }
             });
